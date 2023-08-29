@@ -1,5 +1,7 @@
 using UnityEngine;
 using Microsoft.CognitiveServices.Speech;
+using TMPro;
+using System.Collections.Generic;
 
 public class SpeechToText : MonoBehaviour
 {
@@ -9,11 +11,25 @@ public class SpeechToText : MonoBehaviour
     private SpeechConfig config;
     private SpeechRecognizer recognizer;
 
+    [Header(" UI ")]
+    [SerializeField] private TextMeshProUGUI subtitlesText;
+
+    private Queue<string> recognizedTextQueue = new Queue<string>();
+
     void Start()
     {
         config = SpeechConfig.FromSubscription(subscriptionKey, region);
         recognizer = new SpeechRecognizer(config);
-        
+
+        recognizer.Recognizing += (s, e) =>
+        {
+            if (e.Result.Reason == ResultReason.RecognizingSpeech)
+            {
+                Debug.Log($"Partially Recognized: {e.Result.Text}");
+                recognizedTextQueue.Enqueue(e.Result.Text);
+            }
+        };
+
         recognizer.Recognized += (s, e) =>
         {
             if (e.Result.Reason == ResultReason.RecognizedSpeech)
@@ -32,17 +48,24 @@ public class SpeechToText : MonoBehaviour
                 Debug.LogError($"CANCELED: ErrorDetails={e.ErrorDetails}");
             }
         };
-
-        recognizer.SpeechEndDetected += (s, e) =>
-        {
-            Debug.Log("Speech end detected, stopping recognizer...");
-            recognizer.StopContinuousRecognitionAsync();
-        };
     }
 
-    public async void OnButtonPress()
+    void Update()
+    {
+        while (recognizedTextQueue.Count > 0)
+        {
+            subtitlesText.text = recognizedTextQueue.Dequeue();
+        }
+    }
+
+    public async void SubtitlesOn()
     {
         await recognizer.StartContinuousRecognitionAsync();
+    }
+
+    public async void SubtitlesOff()
+    {
+        await recognizer.StopContinuousRecognitionAsync();
     }
 
     void OnDestroy()
@@ -50,3 +73,4 @@ public class SpeechToText : MonoBehaviour
         recognizer.Dispose();
     }
 }
+
