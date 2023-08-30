@@ -2,9 +2,12 @@ using UnityEngine;
 using Microsoft.CognitiveServices.Speech;
 using TMPro;
 using System.Collections.Generic;
+using System.Collections;
 
 public class SpeechToText : MonoBehaviour
 {
+    private const string CLEAR_COMMAND = "__CLEAR__";
+
     [Header(" Authentication ")]
     [SerializeField] private string subscriptionKey = "";
     [SerializeField] private string region = "";
@@ -13,19 +16,35 @@ public class SpeechToText : MonoBehaviour
 
     [Header(" UI ")]
     [SerializeField] private TextMeshProUGUI subtitlesText;
+    [SerializeField] private TextMeshProUGUI annotationText;
+
+    private bool displaySubtitles = false;
+    private bool isRecognizing = false;
+    private bool isAnnotateMode = false;
 
     private Queue<string> recognizedTextQueue = new Queue<string>();
+    private Queue<string> annotationTextQueue = new Queue<string>();
 
     void Start()
+    {
+        InitializeRecognizer();
+    }
+
+    void Update()
+    {
+        UpdateSubtitles();
+        UpdateAnnotation();
+    }
+
+    private void InitializeRecognizer()
     {
         config = SpeechConfig.FromSubscription(subscriptionKey, region);
         recognizer = new SpeechRecognizer(config);
 
         recognizer.Recognizing += (s, e) =>
         {
-            if (e.Result.Reason == ResultReason.RecognizingSpeech)
+            if (e.Result.Reason == ResultReason.RecognizingSpeech && displaySubtitles)
             {
-                Debug.Log($"Partially Recognized: {e.Result.Text}");
                 recognizedTextQueue.Enqueue(e.Result.Text);
             }
         };
@@ -34,7 +53,15 @@ public class SpeechToText : MonoBehaviour
         {
             if (e.Result.Reason == ResultReason.RecognizedSpeech)
             {
-                Debug.Log($"Recognized: {e.Result.Text}");
+                if (isAnnotateMode)
+                {
+                    annotationTextQueue.Enqueue(e.Result.Text);
+                    isAnnotateMode = false;
+                }
+                else
+                {
+                    recognizedTextQueue.Enqueue(CLEAR_COMMAND);
+                }
             }
         };
 
@@ -50,22 +77,61 @@ public class SpeechToText : MonoBehaviour
         };
     }
 
-    void Update()
+    private void UpdateSubtitles()
     {
         while (recognizedTextQueue.Count > 0)
         {
-            subtitlesText.text = recognizedTextQueue.Dequeue();
+            string text = recognizedTextQueue.Dequeue();
+
+            if (text == CLEAR_COMMAND)
+            {
+                StartCoroutine(ClearSubtitlesAfterDelay(3f));
+            }
+            else
+            {
+                subtitlesText.text = text;
+            }
         }
     }
 
-    public async void SubtitlesOn()
+    private void UpdateAnnotation()
     {
-        await recognizer.StartContinuousRecognitionAsync();
+        if (annotationTextQueue.Count > 0)
+        {
+            annotationText.text = annotationTextQueue.Dequeue();
+        }
     }
 
-    public async void SubtitlesOff()
+    public void SubtitlesOn()
     {
-        await recognizer.StopContinuousRecognitionAsync();
+        displaySubtitles = true;
+        StartRecognizerIfNotRunning();
+    }
+
+    public void SubtitlesOff()
+    {
+        displaySubtitles = false;
+    }
+
+    public void AnnotateSpeech()
+    {
+        isAnnotateMode = true;
+        StartRecognizerIfNotRunning();
+    }
+
+    private async void StartRecognizerIfNotRunning()
+    {
+        if (!isRecognizing)
+        {
+            isRecognizing = true;
+            await recognizer.StartContinuousRecognitionAsync();
+        }
+    }
+
+    IEnumerator ClearSubtitlesAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        subtitlesText.text = "";
     }
 
     void OnDestroy()
