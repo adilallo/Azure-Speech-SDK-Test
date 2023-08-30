@@ -923,7 +923,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 1
+  m_enableWordWrapping: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -943,7 +943,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: -4.1639023, z: -280.65305, w: 8.436188}
+  m_margin: {x: -3.3642273, y: 5.612999, z: 5.968506, w: 8.436188}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -972,11 +972,11 @@ RectTransform:
   m_Father: {fileID: 2092974327}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -138.76108, y: -118.65333}
-  m_SizeDelta: {x: 377.5222, y: 116.6933}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: -268, y: -162.315}
+  m_SizeDelta: {x: 642.86, y: 100}
+  m_Pivot: {x: 0, y: 0.5}
 --- !u!1 &1232684562
 GameObject:
   m_ObjectHideFlags: 0
@@ -1497,6 +1497,7 @@ MonoBehaviour:
   subscriptionKey: 
   region: westus
   subtitlesText: {fileID: 1065682659}
+  subtitleLength: 40
   annotationText: {fileID: 1272833579}
 --- !u!4 &1508517687
 Transform:
