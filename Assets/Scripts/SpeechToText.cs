@@ -1,33 +1,32 @@
 using UnityEngine;
 using Microsoft.CognitiveServices.Speech;
 using TMPro;
-using System;
 using System.Collections.Generic;
 using System.Collections;
 
 public class SpeechToText : MonoBehaviour
 {
-    private const string CLEAR_COMMAND = "__CLEAR__";
+    private const string _clearCommand = "__CLEAR__";
 
     [Header("Authentication")]
-    [SerializeField] private string subscriptionKey = "";
-    [SerializeField] private string region = "";
-    private SpeechConfig config;
-    private SpeechRecognizer recognizer;
+    [SerializeField] private string _subscriptionKey = "";
+    [SerializeField] private string _region = "";
+    private SpeechConfig _config;
+    private SpeechRecognizer _recognizer;
 
     [Header("UI")]
-    [SerializeField] private TextMeshProUGUI subtitlesText;
-    [SerializeField] private int subtitleLength = 25; 
-    [SerializeField] private TextMeshProUGUI annotationText;
+    [SerializeField] private TextMeshProUGUI _subtitlesText;
+    [SerializeField] private int _subtitleLength = 25;
+    [SerializeField] private TextMeshProUGUI _annotationText;
 
-    private bool displaySubtitles = false;
-    private bool isRecognizing = false;
-    private bool isAnnotateMode = false;
+    private bool _displaySubtitles = false;
+    private bool _isRecognizing = false;
+    private bool _isAnnotateMode = false;
 
-    private Queue<string> recognizedTextQueue = new Queue<string>();
-    private Queue<string> annotationTextQueue = new Queue<string>();
+    private Queue<string> _recognizedTextQueue = new Queue<string>();
+    private Queue<string> _annotationTextQueue = new Queue<string>();
 
-    private System.Object threadLocker = new System.Object();
+    private readonly System.Object _threadLocker = new System.Object();
 
     void Start()
     {
@@ -42,48 +41,47 @@ public class SpeechToText : MonoBehaviour
 
     private void InitializeRecognizer()
     {
-        config = SpeechConfig.FromSubscription(subscriptionKey, region);
-        recognizer = new SpeechRecognizer(config);
+        _config = SpeechConfig.FromSubscription(_subscriptionKey, _region);
+        _recognizer = new SpeechRecognizer(_config);
 
-        // Ensure you handle errors here, e.g. invalid subscription details
-        if (recognizer == null)
+        if (_recognizer == null)
         {
             Debug.LogError("Failed to create recognizer. Please check your subscription details.");
             return;
         }
 
-        recognizer.Recognizing += (s, e) =>
+        _recognizer.Recognizing += (s, e) =>
         {
-            if (e.Result.Reason == ResultReason.RecognizingSpeech && displaySubtitles)
+            if (e.Result.Reason == ResultReason.RecognizingSpeech && _displaySubtitles)
             {
-                lock (threadLocker)
+                lock (_threadLocker)
                 {
-                    recognizedTextQueue.Enqueue(e.Result.Text);
+                    _recognizedTextQueue.Enqueue(e.Result.Text);
                 }
             }
         };
 
-        recognizer.Recognized += (s, e) =>
+        _recognizer.Recognized += (s, e) =>
         {
             if (e.Result.Reason == ResultReason.RecognizedSpeech)
             {
-                lock (threadLocker)
+                lock (_threadLocker)
                 {
-                    if (isAnnotateMode)
+                    if (_isAnnotateMode)
                     {
-                        annotationTextQueue.Enqueue(e.Result.Text);
-                        isAnnotateMode = false;
-                        recognizedTextQueue.Enqueue(CLEAR_COMMAND);
+                        _annotationTextQueue.Enqueue(e.Result.Text);
+                        _isAnnotateMode = false;
+                        _recognizedTextQueue.Enqueue(_clearCommand);
                     }
                     else
                     {
-                        recognizedTextQueue.Enqueue(CLEAR_COMMAND);
+                        _recognizedTextQueue.Enqueue(_clearCommand);
                     }
                 }
             }
         };
 
-        recognizer.Canceled += (s, e) =>
+        _recognizer.Canceled += (s, e) =>
         {
             Debug.Log($"CANCELED: Reason={e.Reason}");
 
@@ -91,90 +89,93 @@ public class SpeechToText : MonoBehaviour
             {
                 Debug.LogError($"CANCELED: ErrorCode={e.ErrorCode}");
                 Debug.LogError($"CANCELED: ErrorDetails={e.ErrorDetails}");
-                // Consider adding more robust error handling here
             }
         };
     }
 
-    private string currentRecognitionContent = "";
+    private string _currentRecognitionContent = "";
 
     private void UpdateSubtitles()
     {
-        lock (threadLocker)
+        lock (_threadLocker)
         {
-            if (recognizedTextQueue.Count > 0)
+            if (_recognizedTextQueue.Count > 0)
             {
-                // Only take the most recent item from the queue
-                string text = recognizedTextQueue.Dequeue();
-                recognizedTextQueue.Clear(); // Clear out any other items
+                string text = _recognizedTextQueue.Dequeue();
+                _recognizedTextQueue.Clear();
 
-                if (text == CLEAR_COMMAND)
+                if (text == _clearCommand)
                 {
                     StartCoroutine(ClearSubtitlesAfterDelay(1f));
-                    currentRecognitionContent = ""; // Clear the current content
+                    _currentRecognitionContent = "";
                 }
                 else
                 {
-                    currentRecognitionContent = text;  // Reset the current content
+                    _currentRecognitionContent = text;
 
-                    // Display only the last segment (up to the subtitle length) of the current content
-                    int startIdx = Mathf.Max(0, currentRecognitionContent.Length - subtitleLength);
-                    subtitlesText.text = currentRecognitionContent.Substring(startIdx);
+                    int startIdx = Mathf.Max(0, _currentRecognitionContent.Length - _subtitleLength);
+                    _subtitlesText.text = _currentRecognitionContent.Substring(startIdx);
                 }
             }
         }
     }
 
-
     private void UpdateAnnotation()
     {
-        lock (threadLocker)
+        lock (_threadLocker)
         {
-            if (annotationTextQueue.Count > 0)
+            if (_annotationTextQueue.Count > 0)
             {
-                annotationText.text = annotationTextQueue.Dequeue();
+                _annotationText.text = _annotationTextQueue.Dequeue();
             }
         }
     }
 
+    /// <summary>
+    /// Enables the display of subtitles.
+    /// </summary>
     public void SubtitlesOn()
     {
-        displaySubtitles = true;
+        _displaySubtitles = true;
         StartRecognizerIfNotRunning();
     }
 
+    /// <summary>
+    /// Disables the display of subtitles.
+    /// </summary>
     public void SubtitlesOff()
     {
-        displaySubtitles = false;
+        _displaySubtitles = false;
         StartCoroutine(ClearSubtitlesAfterDelay(1f));
     }
 
+    /// <summary>
+    /// Activates annotation mode for speech.
+    /// </summary>
     public void AnnotateSpeech()
     {
-        isAnnotateMode = true;
-        recognizedTextQueue.Clear(); // Clear any pending recognized phrases
+        _isAnnotateMode = true;
+        _recognizedTextQueue.Clear();
         StartRecognizerIfNotRunning();
     }
 
     private async void StartRecognizerIfNotRunning()
     {
-        if (!isRecognizing)
+        if (!_isRecognizing)
         {
-            isRecognizing = true;
-            await recognizer.StartContinuousRecognitionAsync();
+            _isRecognizing = true;
+            await _recognizer.StartContinuousRecognitionAsync();
         }
     }
 
     IEnumerator ClearSubtitlesAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);
-        subtitlesText.text = "";
+        _subtitlesText.text = "";
     }
 
     void OnDestroy()
     {
-        recognizer.Dispose();
+        _recognizer.Dispose();
     }
 }
-
-

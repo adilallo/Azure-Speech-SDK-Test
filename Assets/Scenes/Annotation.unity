@@ -1494,11 +1494,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91833fb5985bc594ba43a034c410bc96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  subscriptionKey: 
-  region: 
-  subtitlesText: {fileID: 1065682659}
-  subtitleLength: 40
-  annotationText: {fileID: 1272833579}
+  _subscriptionKey: 
+  _region: westus
+  _subtitlesText: {fileID: 1065682659}
+  _subtitleLength: 25
+  _annotationText: {fileID: 1272833579}
 --- !u!4 &1508517687
 Transform:
   m_ObjectHideFlags: 0
