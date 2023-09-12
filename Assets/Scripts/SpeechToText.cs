@@ -1,8 +1,8 @@
-using UnityEngine;
-using Microsoft.CognitiveServices.Speech;
-using TMPro;
 using System.Collections.Generic;
 using System.Collections;
+using Microsoft.CognitiveServices.Speech;
+using TMPro;
+using UnityEngine;
 
 public class SpeechToText : MonoBehaviour
 {
